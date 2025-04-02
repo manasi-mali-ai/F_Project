@@ -48,7 +48,7 @@ if option == "CSV File Analysis":
         st.write("### 📝 Automated Text Summary")
         num_rows, num_cols = df.shape
         summary_text = f"The dataset contains **{num_rows} rows** and **{num_cols} columns**. "
-        summary_text += f"The mean of numerical columns is:\n\n{df.mean().to_string()}."
+        summary_text += f"The mean of numerical columns is:\n\n{df.mean()}."
         st.write(summary_text)
 
 elif option == "Visual Data Analysis":
