@@ -5,3 +5,4 @@ pillow
 transformers
 pytesseract
 opencv-python
+opencv-python-headless
