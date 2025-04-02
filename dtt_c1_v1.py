@@ -56,7 +56,7 @@ elif option == "Visual":
   Text Generation: Use pre-trained models like GPT-2/3 for text generation. To stay within free options, you can use **Hugging Face's transformers** library.
 
   bash'''
-  pip install transformers
+  #pip install transformers
   
 from transformers import pipeline
 
