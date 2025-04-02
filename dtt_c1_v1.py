@@ -1,66 +1,45 @@
 import streamlit as st
 import pandas as pd
-import torch
 import cv2
 import pytesseract
-from transformers import T5ForConditionalGeneration, T5Tokenizer
-st.title("Automated Reporting System")
+from transformers import pipeline
+from PIL import Image
+import numpy as np
 
-# File upload options
-option = st.radio("Choose Input Type:", ["CSV File", "Visual Data (Chart/Image)"])
+# Load text generation model (GPT-2)
+text_generator = pipeline("text-generation", model="gpt2")
 
-uploaded_file = st.file_uploader("Upload File", type=["csv", "png", "jpg", "jpeg"])
+# Function to summarize CSV data
+def summarize_csv(file):
+    df = pd.read_csv(file)
+    summary = df.describe().to_string()
+    generated_text = text_generator(summary, max_length=200)[0]['generated_text']
+    return generated_text
 
-if uploaded_file:
-    if option == "CSV File":
-        df = pd.read_csv(uploaded_file)
-        st.write("Preview of Uploaded CSV:")
-        st.dataframe(df)
+# Function to analyze and summarize images
+def analyze_image(image):
+    image = Image.open(image)
+    img_array = np.array(image)
+    text = pytesseract.image_to_string(img_array)
+    generated_text = text_generator(text, max_length=200)[0]['generated_text']
+    return generated_text
 
-        if st.button("Generate Summary"):
-            summary = generate_text_from_csv(df)  # Function to process CSV
-            st.write("Generated Summary:")
-            st.text(summary)
+# Streamlit UI
+st.title("Automated Data & Visual Report Generator")
 
-    elif option == "Visual Data (Chart/Image)":
-        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+option = st.radio("Choose Data Type", ["CSV File", "Visual Data (Image/Chart)"])
 
-        if st.button("Extract Insights"):
-            insights = generate_text_from_image(uploaded_file)  # Function to process images
-            st.write("Generated Report:")
-            st.text(insights)
-def generate_text_from_csv(df):
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
-    model = T5ForConditionalGeneration.from_pretrained("t5-small")
+if option == "CSV File":
+    uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
+    if uploaded_file is not None:
+        st.write("### Summary:")
+        summary = summarize_csv(uploaded_file)
+        st.text_area("Generated Summary", summary, height=200)
 
-    # Convert data into text format
-    text_input = "summarize: " + df.to_string()
-    inputs = tokenizer.encode(text_input, return_tensors="pt", max_length=512, truncation=True)
-
-    # Generate summary
-    summary_ids = model.generate(inputs, max_length=150, num_return_sequences=1)
-    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-    return summary
-def generate_text_from_image(image_path):
-    img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # OCR to extract text
-    extracted_text = pytesseract.image_to_string(gray)
-
-    # Convert extracted text into a summary
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
-    model = T5ForConditionalGeneration.from_pretrained("t5-small")
-
-    text_input = "summarize: " + extracted_text
-    inputs = tokenizer.encode(text_input, return_tensors="pt", max_length=512, truncation=True)
-
-    summary_ids = model.generate(inputs, max_length=150, num_return_sequences=1)
-    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-    return summary
-def refine_with_neural_planning(text):
-    """Improve coherence and factual accuracy using predefined patterns."""
-    structured_text = text.replace("Firstly,", "Step 1:") \
-                          .replace("Secondly,", "Step 2:") \
-                          .replace("Finally,", "Conclusion:")
-    return structured_text
+elif option == "Visual Data (Image/Chart)":
+    uploaded_image = st.file_uploader("Upload Image or Chart", type=["png", "jpg", "jpeg"])
+    if uploaded_image is not None:
+        st.image(uploaded_image, caption="Uploaded Image", use_column_width=True)
+        st.write("### Extracted Insights:")
+        insights = analyze_image(uploaded_image)
+        st.text_area("Generated Report", insights, height=200)
