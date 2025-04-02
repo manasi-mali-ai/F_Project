@@ -3,6 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
 import os
+import pytesseract
+from transformers import pipeline
+
 
 # Title of the web app
 st.title('Data and Visual Intelligence System')
