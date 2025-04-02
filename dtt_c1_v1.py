@@ -7,7 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1dFB_RRDMPkT_QZNc6YtdTsA6f-h-8VQx
 """
 
-!pip install streamlit pandas numpy pillow matplotlib scikit-learn
+pip install streamlit pandas numpy pillow matplotlib scikit-learn
 
 import streamlit as st
 import pandas as pd
