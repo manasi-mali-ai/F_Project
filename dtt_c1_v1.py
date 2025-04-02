@@ -51,9 +51,9 @@ elif option == "Visual":
 ### 2. Implementing Case 1: Data-to-Text Generation with Augmentation Techniques
 For Case 1, you will need to generate textual summaries from structured data, applying augmentation techniques. This can involve summarizing statistics, insights, and trends from the CSV data.
 
-- Data Augmentation: You can use simple augmentation techniques, such as introducing noise, changing column values, or generating additional features. You can use libraries like `pandas` for this or even basic text-based augmentation methods.
+ Data Augmentation: You can use simple augmentation techniques, such as introducing noise, changing column values, or generating additional features. You can use libraries like `pandas` for this or even basic text-based augmentation methods.
 
-- Text Generation: Use pre-trained models like GPT-2/3 for text generation. To stay within free options, you can use **Hugging Face's transformers** library.
+  Text Generation: Use pre-trained models like GPT-2/3 for text generation. To stay within free options, you can use **Hugging Face's transformers** library.
 
   ```bash
   pip install transformers
