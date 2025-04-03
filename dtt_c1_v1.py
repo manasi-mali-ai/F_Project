@@ -1,45 +1,80 @@
 import streamlit as st
 import pandas as pd
-import cv2
-import pytesseract
-from transformers import pipeline
 from PIL import Image
+import matplotlib.pyplot as plt
+import io
 import numpy as np
+from io import StringIO
+from sklearn.preprocessing import LabelEncoder
+import seaborn as sns
 
-# Load text generation model (GPT-2)
-text_generator = pipeline("text-generation", model="gpt2")
+# NLG (Natural Language Generation) utility function for CSV Summary
+def generate_csv_summary(df):
+    # Basic statistical summary of numerical columns
+    summary = df.describe().transpose()
+    
+    # Generating a text-based summary
+    summary_text = f"Dataset contains {df.shape[0]} rows and {df.shape[1]} columns.\n\n"
+    summary_text += "Statistical Summary:\n"
+    summary_text += summary.to_string()
+    
+    return summary_text
 
-# Function to summarize CSV data
-def summarize_csv(file):
-    df = pd.read_csv(file)
-    summary = df.describe().to_string()
-    generated_text = text_generator(summary, max_length=200)[0]['generated_text']
-    return generated_text
+# Function to generate image captions (using a placeholder for simplicity)
+def generate_image_caption(image):
+    # In an actual implementation, we would use an image captioning model
+    # For simplicity, we're using a placeholder text here.
+    return "This is a placeholder caption for the uploaded image."
 
-# Function to analyze and summarize images
-def analyze_image(image):
-    image = Image.open(image)
-    img_array = np.array(image)
-    text = pytesseract.image_to_string(img_array)
-    generated_text = text_generator(text, max_length=200)[0]['generated_text']
-    return generated_text
+# Streamlit page configuration
+st.set_page_config(page_title="NLG Data to Text", page_icon=":bar_chart:", layout="wide")
 
-# Streamlit UI
-st.title("Automated Data & Visual Report Generator")
+# App Title
+st.title("NLG Data to Text")
 
-option = st.radio("Choose Data Type", ["CSV File", "Visual Data (Image/Chart)"])
+# Sidebar - Upload section
+st.sidebar.header("Upload Data")
+uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
+uploaded_image = st.sidebar.file_uploader("Upload a Graph/Image", type=["png", "jpg", "jpeg", "svg"])
 
-if option == "CSV File":
-    uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
-    if uploaded_file is not None:
-        st.write("### Summary:")
-        summary = summarize_csv(uploaded_file)
-        st.text_area("Generated Summary", summary, height=200)
+# Display file upload options
+if uploaded_file:
+    st.sidebar.success("File uploaded successfully!")
 
-elif option == "Visual Data (Image/Chart)":
-    uploaded_image = st.file_uploader("Upload Image or Chart", type=["png", "jpg", "jpeg"])
-    if uploaded_image is not None:
-        st.image(uploaded_image, caption="Uploaded Image", use_column_width=True)
-        st.write("### Extracted Insights:")
-        insights = analyze_image(uploaded_image)
-        st.text_area("Generated Report", insights, height=200)
+if uploaded_image:
+    st.sidebar.success("Image uploaded successfully!")
+
+# Main Body
+st.header("Generate Report")
+
+# If user uploads CSV
+if uploaded_file:
+    st.subheader("CSV Summary")
+    
+    # Read the CSV into DataFrame
+    df = pd.read_csv(uploaded_file)
+    
+    # Display the dataframe
+    st.write("### Data Overview")
+    st.write(df.head())
+    
+    # Generate and display summary
+    st.write("### Data Summary")
+    summary_text = generate_csv_summary(df)
+    st.text_area("Summary Report", summary_text, height=300)
+
+# If user uploads Image
+elif uploaded_image:
+    st.subheader("Image Captioning")
+    
+    # Display the uploaded image
+    img = Image.open(uploaded_image)
+    st.image(img, caption="Uploaded Image", use_column_width=True)
+    
+    # Generate and display the caption
+    caption = generate_image_caption(img)
+    st.write("### Image Caption:")
+    st.write(caption)
+
+else:
+    st.write("Please upload a CSV file or an image to generate a report.")
