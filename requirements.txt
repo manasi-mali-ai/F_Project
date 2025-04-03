@@ -7,3 +7,5 @@ pytesseract
 opencv-python
 matplotlib
 opencv-python-headless
+scikit-learn
+seaborn
