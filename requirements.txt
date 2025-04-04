@@ -16,3 +16,12 @@ matplotlib
 pillow
 seaborn
 scikit-learn
+streamlit
+pandas
+numpy
+matplotlib
+seaborn
+opencv-python
+pillow
+transformers
+torc
