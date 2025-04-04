@@ -4,22 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
-from transformers import pipeline
 
-# Load NLP model for text generation
-text_generator = pipeline("text-generation", model="distilgpt2")  # Smaller, faster model
-
+# Function to generate text summary
 def generate_text_summary(data):
     """Generate textual summary from structured data."""
-    summary = """This dataset contains {} rows and {} columns. Here are some key insights:""".format(data.shape[0], data.shape[1])
-    summary += " The mean values of numerical columns are: " + str(data.mean(numeric_only=True).to_dict())
-    return text_generator(summary, max_length=100)[0]['generated_text']
+    summary = f"This dataset contains {data.shape[0]} rows and {data.shape[1]} columns."
+    summary += "\nKey Statistics:\n"
+    summary += str(data.describe().to_dict())  # Simple statistical summary
+    return summary
 
+# Function to handle image analysis (Dummy function for now)
 def extract_text_from_image(image):
-    """Extract text insights from charts or graphs."""
-    image = image.convert("L")  # Convert to grayscale using PIL
-    text_summary = "Analyzing the chart for key insights..."  # Placeholder for real vision analysis
-    return text_generator(text_summary, max_length=100)[0]['generated_text']
+    """Placeholder for image analysis."""
+    return "Image uploaded. Text analysis is not implemented in this version."
 
 def main():
     st.title("📊 AI-Powered Data & Visual Intelligence System")
@@ -33,7 +30,7 @@ def main():
             df = pd.read_csv(uploaded_file)
             st.write("### Preview of Uploaded Data:")
             st.dataframe(df.head())
-            
+
             st.write("### Generated Summary:")
             summary = generate_text_summary(df)
             st.success(summary)
@@ -43,7 +40,7 @@ def main():
         if uploaded_image is not None:
             image = Image.open(uploaded_image)
             st.image(image, caption="Uploaded Chart", use_column_width=True)
-            
+
             st.write("### Generated Summary:")
             summary = extract_text_from_image(image)
             st.success(summary)
