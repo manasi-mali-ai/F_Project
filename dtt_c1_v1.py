@@ -12,17 +12,15 @@ text_generator = pipeline("text-generation", model="gpt2")
 
 def generate_text_summary(data):
     """Generate textual summary from structured data."""
-    summary = """This dataset contains {} rows and {} columns. Here are some key insights: ".format(data.shape[0], data.shape[1])
-    summary += "The mean values of numerical columns are: " + str(data.mean(numeric_only=True).to_dict())
+    summary = """This dataset contains {} rows and {} columns. Here are some key insights:""".format(data.shape[0], data.shape[1])
+    summary += " The mean values of numerical columns are: " + str(data.mean(numeric_only=True).to_dict())
     return text_generator(summary, max_length=100)[0]['generated_text']
-
 
 def extract_text_from_image(image):
     """Extract text insights from charts or graphs."""
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
     text_summary = "Analyzing the chart for key insights..."  # Placeholder for real vision analysis
     return text_generator(text_summary, max_length=100)[0]['generated_text']
-
 
 def main():
     st.title("📊 AI-Powered Data & Visual Intelligence System")
