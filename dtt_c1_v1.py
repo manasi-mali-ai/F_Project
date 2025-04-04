@@ -1,11 +1,18 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from PIL import Image
+from transformers import BlipProcessor, BlipForConditionalGeneration
 
-# Function to generate text summary
+# Load BLIP Model and Processor (for Image Captioning)
+@st.cache_resource
+def load_model():
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+    model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+    return processor, model
+
+processor, model = load_model()
+
+# Function to generate text summary for CSV data
 def generate_text_summary(data):
     """Generate textual summary from structured data."""
     summary = f"This dataset contains {data.shape[0]} rows and {data.shape[1]} columns."
@@ -13,14 +20,17 @@ def generate_text_summary(data):
     summary += str(data.describe().to_dict())  # Simple statistical summary
     return summary
 
-# Function to handle image analysis (Dummy function for now)
-def extract_text_from_image(image):
-    """Placeholder for image analysis."""
-    return "Image uploaded. Text analysis is not implemented in this version."
+# Function to generate captions for an image
+def generate_image_summary(image):
+    """Generate an easy-to-understand description of the image."""
+    inputs = processor(image, return_tensors="pt")
+    output = model.generate(**inputs)
+    caption = processor.decode(output[0], skip_special_tokens=True)
+    return caption
 
 def main():
     st.title("📊 AI-Powered Data & Visual Intelligence System")
-    st.write("Upload structured data (CSV) or visual data (charts/images) to generate automated insights.")
+    st.write("Upload structured data (CSV) or visual data (images) to generate automated insights.")
 
     option = st.selectbox("Select Analysis Type:", ["Data-to-Text (CSV)", "Visual Intelligence (Image)"])
     
@@ -34,15 +44,15 @@ def main():
             st.write("### Generated Summary:")
             summary = generate_text_summary(df)
             st.success(summary)
-    
+
     elif option == "Visual Intelligence (Image)":
-        uploaded_image = st.file_uploader("Upload an Image (Chart or Graph)", type=["jpg", "png", "jpeg"])
+        uploaded_image = st.file_uploader("Upload an Image", type=["jpg", "png", "jpeg"])
         if uploaded_image is not None:
             image = Image.open(uploaded_image)
-            st.image(image, caption="Uploaded Chart", use_column_width=True)
+            st.image(image, caption="Uploaded Image", use_column_width=True)
 
             st.write("### Generated Summary:")
-            summary = extract_text_from_image(image)
+            summary = generate_image_summary(image)
             st.success(summary)
 
 if __name__ == "__main__":
