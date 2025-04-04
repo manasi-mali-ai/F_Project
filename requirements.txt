@@ -4,3 +4,8 @@ numpy
 matplotlib
 seaborn
 pillow
+streamlit
+pandas
+pillow
+transformers
+torch
