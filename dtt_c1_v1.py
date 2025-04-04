@@ -7,7 +7,7 @@ from PIL import Image
 from transformers import pipeline
 
 # Load NLP model for text generation
-text_generator = pipeline("text-generation", model="gpt2")
+text_generator = pipeline("text-generation", model="distilgpt2")  # Smaller, faster model
 
 def generate_text_summary(data):
     """Generate textual summary from structured data."""
