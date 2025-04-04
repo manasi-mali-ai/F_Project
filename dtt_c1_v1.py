@@ -12,46 +12,56 @@ def load_model():
 
 processor, model = load_model()
 
-# Function to generate text summary for CSV data
+# Function to generate a simple text summary from CSV data
 def generate_text_summary(data):
-    """Generate textual summary from structured data."""
-    summary = f"This dataset contains {data.shape[0]} rows and {data.shape[1]} columns."
-    summary += "\nKey Statistics:\n"
-    summary += str(data.describe().to_dict())  # Simple statistical summary
-    return summary
+    """Generate an easy-to-understand summary of the dataset."""
+    summary = []
+    summary.append(f"- The dataset contains **{data.shape[0]} rows** and **{data.shape[1]} columns**.")
 
-# Function to generate captions for an image
+    for col in data.select_dtypes(include=["number"]).columns[:5]:  # Limit to 5 numerical columns
+        summary.append(f"- The column **'{col}'** has an average (mean) of **{data[col].mean():.2f}**.")
+        summary.append(f"- The median value of **'{col}'** is **{data[col].median():.2f}**.")
+    
+    return "\n".join(summary)
+
+# Function to generate a simple caption for an image
 def generate_image_summary(image):
-    """Generate an easy-to-understand description of the image."""
+    """Generate a simple and clear caption for the image."""
     inputs = processor(image, return_tensors="pt")
     output = model.generate(**inputs)
     caption = processor.decode(output[0], skip_special_tokens=True)
-    return caption
+    
+    summary = [
+        f"- **What is in the image?**: {caption}.",
+        "- This is an AI-generated description and may not be 100% accurate.",
+    ]
+    
+    return "\n".join(summary)
 
 def main():
-    st.title("📊 AI-Powered Data & Visual Intelligence System")
-    st.write("Upload structured data (CSV) or visual data (images) to generate automated insights.")
+    st.title("📊 AI-Powered Data & Image Insights")
+    st.write("Upload a dataset or an image, and AI will generate a simple summary.")
 
-    option = st.selectbox("Select Analysis Type:", ["Data-to-Text (CSV)", "Visual Intelligence (Image)"])
+    option = st.selectbox("Select Analysis Type:", ["📊 Data Insights (CSV)", "🖼️ Image Insights"])
     
-    if option == "Data-to-Text (CSV)":
+    if option == "📊 Data Insights (CSV)":
         uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
         if uploaded_file is not None:
             df = pd.read_csv(uploaded_file)
-            st.write("### Preview of Uploaded Data:")
+            st.write("### 📋 Preview of Uploaded Data:")
             st.dataframe(df.head())
 
-            st.write("### Generated Summary:")
+            st.write("### 🔍 AI-Generated Summary:")
             summary = generate_text_summary(df)
             st.success(summary)
 
-    elif option == "Visual Intelligence (Image)":
+    elif option == "🖼️ Image Insights":
         uploaded_image = st.file_uploader("Upload an Image", type=["jpg", "png", "jpeg"])
         if uploaded_image is not None:
             image = Image.open(uploaded_image)
             st.image(image, caption="Uploaded Image", use_column_width=True)
 
-            st.write("### Generated Summary:")
+            st.write("### 📝 AI-Generated Summary:")
             summary = generate_image_summary(image)
             st.success(summary)
 
