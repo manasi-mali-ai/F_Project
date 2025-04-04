@@ -1,16 +1,6 @@
-opencv-python-headless
-transformers
 streamlit
 pandas
 numpy
 matplotlib
 seaborn
-Pillow
-opencv-python-headless
-transformers
-streamlit
-pandas
-numpy
-matplotlib
-seaborn
-Pillow
+pillow
