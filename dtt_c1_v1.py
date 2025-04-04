@@ -1,69 +1,55 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import cv2
 from PIL import Image
+from transformers import pipeline
 
-# Function to generate a structured, human-like summary of the dataset
-def generate_csv_summary(df):
-    num_rows, num_cols = df.shape
-    summary_text = f"📊 **Dataset Overview:**\n\n"
-    summary_text += f"This dataset contains **{num_rows} rows** and **{num_cols} columns**.\n"
+# Load NLP model for text generation
+text_generator = pipeline("text-generation", model="gpt2")
 
-    for col in df.columns:
-        unique_values = df[col].nunique()
-        if df[col].dtype == 'object':  # Categorical Data
-            example_values = df[col].dropna().unique()[:3]  # Show first 3 unique values
-            summary_text += f"\n🔹 **{col}**: This column contains **categorical** data with {unique_values} unique values. Examples: {', '.join(map(str, example_values))}.\n"
-        else:  # Numerical Data
-            min_val = df[col].min()
-            max_val = df[col].max()
-            mean_val = df[col].mean()
-            summary_text += f"\n🔹 **{col}**: Numerical column with values ranging from **{min_val} to {max_val}**, and an average of **{mean_val:.2f}**.\n"
+def generate_text_summary(data):
+    """Generate textual summary from structured data."""
+    summary = """This dataset contains {} rows and {} columns. Here are some key insights: ".format(data.shape[0], data.shape[1])
+    summary += "The mean values of numerical columns are: " + str(data.mean(numeric_only=True).to_dict())
+    return text_generator(summary, max_length=100)[0]['generated_text']
 
-    return summary_text
 
-# Function to generate a structured placeholder caption for uploaded images
-def generate_image_caption():
-    return """
-    🖼 **Image Overview:**  
-    - The uploaded image appears to be a **chart or visualization**.  
-    - It likely represents **data trends, comparisons, or patterns**.  
-    - If it is a **bar chart**, it may show category-wise performance.  
-    - If it is a **line chart**, it might indicate trends over time.  
-    """
+def extract_text_from_image(image):
+    """Extract text insights from charts or graphs."""
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    text_summary = "Analyzing the chart for key insights..."  # Placeholder for real vision analysis
+    return text_generator(text_summary, max_length=100)[0]['generated_text']
 
-# Streamlit Page Config
-st.set_page_config(page_title="NLG Data to Text", page_icon="📊", layout="wide")
 
-# Title
-st.title("📊 NLG Data to Text")
+def main():
+    st.title("📊 AI-Powered Data & Visual Intelligence System")
+    st.write("Upload structured data (CSV) or visual data (charts/images) to generate automated insights.")
 
-# Sidebar Upload
-st.sidebar.header("Upload Data")
-uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
-uploaded_image = st.sidebar.file_uploader("Upload a Graph/Image", type=["png", "jpg", "jpeg", "svg"])
-
-# If user uploads CSV
-if uploaded_file:
-    st.subheader("📑 CSV Summary")
+    option = st.selectbox("Select Analysis Type:", ["Data-to-Text (CSV)", "Visual Intelligence (Image)"])
     
-    df = pd.read_csv(uploaded_file)
-    st.write("### Data Preview")
-    st.write(df.head())
+    if option == "Data-to-Text (CSV)":
+        uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+        if uploaded_file is not None:
+            df = pd.read_csv(uploaded_file)
+            st.write("### Preview of Uploaded Data:")
+            st.dataframe(df.head())
+            
+            st.write("### Generated Summary:")
+            summary = generate_text_summary(df)
+            st.success(summary)
     
-    summary_text = generate_csv_summary(df)
-    st.write("### 🔍 Generated Summary:")
-    st.markdown(summary_text)
+    elif option == "Visual Intelligence (Image)":
+        uploaded_image = st.file_uploader("Upload an Image (Chart or Graph)", type=["jpg", "png", "jpeg"])
+        if uploaded_image is not None:
+            image = Image.open(uploaded_image)
+            st.image(image, caption="Uploaded Chart", use_column_width=True)
+            
+            st.write("### Generated Summary:")
+            summary = extract_text_from_image(image)
+            st.success(summary)
 
-# If user uploads Image
-elif uploaded_image:
-    st.subheader("🖼 Image Analysis")
-    
-    img = Image.open(uploaded_image)
-    st.image(img, caption="Uploaded Image", use_column_width=True)
-    
-    caption = generate_image_caption()
-    st.write("### 🔍 Image Interpretation:")
-    st.markdown(caption)
-
-else:
-    st.write("📢 Please upload a CSV file or an image to generate a report.")
+if __name__ == "__main__":
+    main()
