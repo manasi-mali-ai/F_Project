@@ -1,11 +1,7 @@
 streamlit
 pandas
-numpy
-matplotlib
-seaborn
 pillow
-streamlit
-pandas
-pillow
+pytesseract
 transformers
 torch
+PyMuPDF
