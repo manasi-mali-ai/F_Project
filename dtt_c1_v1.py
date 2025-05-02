@@ -70,12 +70,8 @@ def summarize_dataframe(df):
                    f"Columns include: {', '.join(col_names)}. " \
                    f"{' '.join(insights)}"
 
-    prompt = (
-        f"Summarize this insight in a single paragraph (100+ words) in simple, friendly language that is understandable to non-technical users: "
-        f"\n\n{insight_text}"
-    )
-
-    result = summarizer(prompt, max_length=350, min_length=150, do_sample=False)[0]['summary_text']
+    # Pass only the generated insight text to the summarizer
+    result = summarizer(insight_text, max_length=350, min_length=150, do_sample=False)[0]['summary_text']
     return result
 
 def summarize_text(text):
