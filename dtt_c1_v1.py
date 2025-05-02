@@ -1,115 +1,106 @@
 import streamlit as st
 import pandas as pd
-import fitz  # PyMuPDF
+import fitz  # PyMuPDF for PDFs
 from PIL import Image
 import pytesseract
 from transformers import pipeline
 
-# Load summarization model
+# Load the summarization model from Hugging Face
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
-# CSV Summary Function (Structured + Friendly in one)
-def generate_summary_from_dataframe(df):
+# Function to summarize DataFrame content
+def summarize_dataframe(df):
     num_rows, num_cols = df.shape
-    column_names = df.columns.tolist()
+    col_names = df.columns.tolist()
     numeric_cols = df.select_dtypes(include='number').columns.tolist()
     insights = []
 
-    # Analyze numeric columns
     for col in numeric_cols:
-        col_mean = df[col].mean()
-        col_sum = df[col].sum()
-        col_max = df[col].max()
-        col_min = df[col].min()
-        insights.append(
-            f"'{col}': avg={col_mean:.2f}, total={col_sum:.2f}, max={col_max}, min={col_min}."
-        )
-
-    # Analyze categorical columns
-    for col in df.select_dtypes(include='object').columns.tolist():
         try:
-            top_value = df[col].value_counts().idxmax()
-            count = df[col].value_counts().max()
+            mean = df[col].mean()
+            total = df[col].sum()
+            max_val = df[col].max()
+            min_val = df[col].min()
             insights.append(
-                f"In column '{col}', the most frequent value is '{top_value}' appearing {count} times."
+                f"For '{col}', the average is {mean:.2f}, total is {total:.2f}, maximum is {max_val}, and minimum is {min_val}."
             )
-        except Exception:
+        except:
             continue
 
-    # Construct smart prompt
-    prompt = f"""
-Dataset contains {num_rows} rows and {num_cols} columns: {', '.join(column_names)}.
+    for col in df.select_dtypes(include='object').columns.tolist():
+        try:
+            most_common = df[col].value_counts().idxmax()
+            count = df[col].value_counts().max()
+            insights.append(
+                f"'{col}' most commonly contains '{most_common}' ({count} times)."
+            )
+        except:
+            continue
 
-Key insights:
+    prompt = f"""
+This dataset has {num_rows} rows and {num_cols} columns, including: {', '.join(col_names)}.
+Technical insights:
 {chr(10).join(insights)}
 
-Now write a single, easy-to-understand paragraph in human-friendly language that summarizes the overall content of this dataset.
-It should describe the type of data, patterns, statistics, and what a non-technical person can understand from this.
-Length: at least 6 lines.
+Now write a single, detailed, user-friendly paragraph (minimum 100 words), combining technical insights with non-technical explanation.
+Use simple language for people from non-technical backgrounds.
 """
-
-    result = summarizer(prompt, max_length=350, min_length=120, do_sample=False)[0]['summary_text']
+    result = summarizer(prompt, max_length=350, min_length=150, do_sample=False)[0]['summary_text']
     return result
 
-# Process PDF
-def process_pdf(file):
-    doc = fitz.open(stream=file.read(), filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
-
-# Process image
-def process_image(file):
-    image = Image.open(file)
-    return pytesseract.image_to_string(image)
-
-# General text summarization
+# Function to summarize plain text (PDF/image)
 def summarize_text(text):
-    prompt = f"Summarize the following document or image in a simple and informative paragraph:\n{text}"
-    return summarizer(prompt, max_length=350, min_length=120, do_sample=False)[0]['summary_text']
+    prompt = f"Summarize this content in simple, detailed language for non-technical people (minimum 100 words):\n{text}"
+    result = summarizer(prompt, max_length=350, min_length=150, do_sample=False)[0]['summary_text']
+    return result
 
 # Streamlit UI
-st.set_page_config(page_title="AI Data Summary App", layout="centered")
-st.title("📊 Smart Data Summarizer")
-st.markdown("Upload your **CSV**, **JSON**, **PDF**, or **image (graph, chart, heatmap)** to get a detailed and easy-to-understand summary.")
+st.set_page_config(page_title="📊 Smart Data Summarizer", layout="centered")
+st.title("📈 AI-Powered Data Summarizer")
+st.markdown("Upload your **CSV**, **JSON**, **PDF**, or **image (chart, graph)** to get a detailed and easy-to-understand paragraph summary.")
 
-col1, col2 = st.columns(2)
+uploaded_file = st.file_uploader("📤 Upload CSV / JSON / PDF / Image", type=["csv", "json", "pdf", "png", "jpg", "jpeg"])
 
-with col1:
-    data_file = st.file_uploader("📄 Upload CSV / JSON / PDF", type=["csv", "json", "pdf"])
-
-with col2:
-    image_file = st.file_uploader("🖼️ Upload PNG / JPG / JPEG (Image of graph/chart)", type=["png", "jpg", "jpeg"])
-
-if st.button("🔍 Generate Summary"):
-    if data_file:
+if uploaded_file is not None:
+    if uploaded_file.name.endswith(".csv"):
         try:
-            if data_file.name.endswith('.csv'):
-                df = pd.read_csv(data_file)
-                summary = generate_summary_from_dataframe(df)
-            elif data_file.name.endswith('.json'):
-                df = pd.read_json(data_file)
-                summary = generate_summary_from_dataframe(df)
-            elif data_file.name.endswith('.pdf'):
-                text = process_pdf(data_file)
-                summary = summarize_text(text)
+            df = pd.read_csv(uploaded_file)
+            st.dataframe(df.head())
+            summary = summarize_dataframe(df)
+            st.subheader("📝 Summary")
+            st.write(summary)
         except Exception as e:
-            st.error(f"Error processing file: {e}")
-            summary = None
+            st.error(f"Error reading CSV: {e}")
 
-    elif image_file:
+    elif uploaded_file.name.endswith(".json"):
         try:
-            extracted_text = process_image(image_file)
-            summary = summarize_text(extracted_text)
+            df = pd.read_json(uploaded_file)
+            st.dataframe(df.head())
+            summary = summarize_dataframe(df)
+            st.subheader("📝 Summary")
+            st.write(summary)
+        except Exception as e:
+            st.error(f"Error reading JSON: {e}")
+
+    elif uploaded_file.name.endswith(".pdf"):
+        try:
+            doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+            text = "\n".join([page.get_text() for page in doc])
+            summary = summarize_text(text)
+            st.subheader("📝 Summary")
+            st.write(summary)
+        except Exception as e:
+            st.error(f"Error reading PDF: {e}")
+
+    elif uploaded_file.name.endswith((".png", ".jpg", ".jpeg")):
+        try:
+            image = Image.open(uploaded_file)
+            text = pytesseract.image_to_string(image)
+            summary = summarize_text(text)
+            st.subheader("📝 Summary")
+            st.write(summary)
         except Exception as e:
             st.error(f"Error processing image: {e}")
-            summary = None
 
     else:
-        st.warning("Please upload a file to summarize.")
-        summary = None
-
-    if summary:
-        st.subheader("📄 Summary")
-        st.write(summary)
+        st.warning("❌ Unsupported file type.")
