@@ -1,17 +1,16 @@
+# ✅ Install required packages (first time only, especially for Colab or Streamlit Cloud)
+# !pip install streamlit pandas pdfplumber easyocr transformers
+
 import streamlit as st
 import pandas as pd
 import json
-import pytesseract
-from PIL import Image
 import pdfplumber
+import easyocr
+from PIL import Image
 from transformers import pipeline
-import tempfile
-import os
 
-# Set path to tesseract (for Colab/Linux)
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
-
-# Load summarization pipeline (T5 or BART)
+# ✅ Load OCR and summarizer
+reader = easyocr.Reader(['en'])
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 st.set_page_config(page_title="Smart Summary Generator", layout="wide")
@@ -23,20 +22,24 @@ uploaded_file = st.file_uploader("Upload CSV / JSON / PDF / PNG / JPG", type=['c
 def read_data(file):
     if file.type == "text/csv":
         df = pd.read_csv(file)
+        return df
+
     elif file.type == "application/json":
         data = json.load(file)
         df = pd.json_normalize(data)
+        return df
+
     elif file.type == "application/pdf":
         with pdfplumber.open(file) as pdf:
             text = "\n".join([page.extract_text() for page in pdf.pages if page.extract_text()])
         return text
+
     elif file.type in ["image/png", "image/jpeg", "image/jpg"]:
         image = Image.open(file)
-        text = pytesseract.image_to_string(image)
-        return text
-    else:
-        return None
-    return df
+        results = reader.readtext(image, detail=0)
+        return " ".join(results)
+
+    return None
 
 def summarize_dataframe(df):
     num_rows, num_cols = df.shape
@@ -51,7 +54,7 @@ def summarize_dataframe(df):
             max_val = df[col].max()
             min_val = df[col].min()
             insights.append(
-                f"The column '{col}' has values ranging from {min_val} to {max_val}, with an average of {mean:.2f} and a total of {total:.2f}."
+                f"The column '{col}' ranges from {min_val} to {max_val}, with an average of {mean:.2f} and a total of {total:.2f}."
             )
         except:
             continue
@@ -67,10 +70,9 @@ def summarize_dataframe(df):
             continue
 
     insight_text = f"This dataset has {num_rows} rows and {num_cols} columns. " \
-                   f"Columns include: {', '.join(col_names)}. " \
+                   f"Columns include: {', '.join(col_names[:6])}. " \
                    f"{' '.join(insights)}"
 
-    # Pass only the generated insight text to the summarizer
     result = summarizer(insight_text, max_length=350, min_length=150, do_sample=False)[0]['summary_text']
     return result
 
@@ -82,6 +84,7 @@ def summarize_text(text):
     result = summarizer(prompt, max_length=350, min_length=150, do_sample=False)[0]['summary_text']
     return result
 
+# ✅ App UI logic
 if uploaded_file:
     file_type = uploaded_file.type
     data = read_data(uploaded_file)
@@ -92,11 +95,13 @@ if uploaded_file:
         with st.spinner("Generating summary..."):
             summary = summarize_dataframe(data)
             st.markdown(f"### 📝 Summary\n{summary}")
+
     elif isinstance(data, str):
         st.subheader("📘 Summary Output")
         st.text_area("Extracted Text Preview", value=data[:1000], height=200)
         with st.spinner("Generating summary..."):
             summary = summarize_text(data)
             st.markdown(f"### 📝 Summary\n{summary}")
+
     else:
         st.error("Unsupported file or failed to extract data.")
